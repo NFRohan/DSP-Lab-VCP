@@ -10,5 +10,8 @@ echo Backend will be available at: http://localhost:8000
 echo Frontend will be available at: http://localhost:5173
 echo.
 
+call venv\Scripts\activate
+start cmd /k "uvicorn main:app --reload"
+
 cd frontend
-npm run dev
+start cmd /k "npm run dev"

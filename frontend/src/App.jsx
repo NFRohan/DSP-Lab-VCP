@@ -39,7 +39,7 @@ function App() {
     formData.append('file', selectedFile);
 
     try {
-      const response = await fetch(`${API_URL}/upload-audio/`, {
+      const response = await fetch(`${API_URL}/upload-audio`, {
         method: 'POST',
         body: formData,
       });
@@ -61,10 +61,11 @@ function App() {
 
   const fetchUploadedFiles = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/uploaded-files/`);
+      const response = await fetch(`${API_URL}/uploaded-files`);
       const data = await response.json();
       if (response.ok) {
-        setFileList(data.files);
+        // Show both original and processed files
+        setFileList(data.files.filter(f => f.filename.endsWith('.wav') || f.filename.endsWith('.mp3')));
       } else {
         setError(data.detail || 'Failed to fetch file list.');
       }
@@ -121,23 +122,71 @@ function App() {
 
   const handleVoiceProcess = async (filename, voiceType) => {
     try {
-      const response = await fetch(`${API_URL}/process-audio/${filename}?voice_type=${voiceType}`, {
+      console.log(`Processing ${filename} with ${voiceType} effect`);
+      
+      // Map frontend button to backend effect endpoint
+      let effectEndpoint = voiceType;
+      if (voiceType === 'robot') effectEndpoint = 'robotic';
+      
+      // Only supported effects: robotic, male, female, baby
+      if (!['robotic', 'male', 'female', 'baby'].includes(effectEndpoint)) {
+        setError(`Effect '${voiceType}' is not supported by backend.`);
+        return;
+      }
+      
+      // Download the original file from server
+      const fileResponse = await fetch(`${API_URL}/uploaded-files/${filename}`);
+      if (!fileResponse.ok) {
+        setError('Could not fetch original audio file.');
+        return;
+      }
+      
+      const blob = await fileResponse.blob();
+      const formData = new FormData();
+      formData.append('file', new File([blob], filename));
+      
+      // Send to backend transformation endpoint - explicitly no trailing slash
+      const transformUrl = `${API_URL}/transform/${effectEndpoint}`.replace(/\/$/, '');
+      console.log(`Calling: ${transformUrl}`);
+      
+      const response = await fetch(transformUrl, {
         method: 'POST',
+        body: formData,
       });
-      const data = await response.json();
       
       if (response.ok) {
-        setUploadResponse({
-          ...data,
-          message: `Voice processing initiated: ${data.message}`
-        });
-        // Refresh the file list to show any new processed files
-        fetchUploadedFiles();
+        const audioBlob = await response.blob();
+        // Play the processed audio
+        const audioUrl = window.URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+        setUploadResponse({ message: `Voice processed: ${voiceType}` });
+        setError(''); // Clear any previous errors
       } else {
+        const data = await response.json().catch(() => ({ detail: 'Unknown error' }));
         setError(data.detail || `Failed to process file with ${voiceType} voice.`);
       }
     } catch (err) {
+      console.error('Voice processing error:', err);
       setError('Failed to connect to the server to process the file.');
+    }
+  };
+
+  // Play audio file from backend
+  const handlePlay = async (filename) => {
+    try {
+      const response = await fetch(`${API_URL}/uploaded-files/${filename}`);
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = window.URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      } else {
+        const data = await response.json();
+        setError(data.detail || 'Failed to play file.');
+      }
+    } catch (err) {
+      setError('Failed to connect to the server to play the file.');
     }
   };
 
@@ -183,18 +232,21 @@ function App() {
                   <span>{file.filename} ({(file.size_bytes / 1024).toFixed(2)} KB)</span>
                   <div className="file-actions">
                     <button className="download-btn" onClick={() => handleDownload(file.filename)}>Download</button>
+                    <button className="play-btn" onClick={() => handlePlay(file.filename)}>Play</button>
                     <button className="delete-btn" onClick={() => handleDelete(file.filename)}>Delete</button>
                   </div>
-                  <div className="voice-processing">
-                    <h4>Voice Processing:</h4>
-                    <div className="voice-buttons">
-                      <button className="voice-btn male" onClick={() => handleVoiceProcess(file.filename, 'male')}>Male</button>
-                      <button className="voice-btn female" onClick={() => handleVoiceProcess(file.filename, 'female')}>Female</button>
-                      <button className="voice-btn robot" onClick={() => handleVoiceProcess(file.filename, 'robot')}>Robot</button>
-                      <button className="voice-btn alien" onClick={() => handleVoiceProcess(file.filename, 'alien')}>Alien</button>
-                      <button className="voice-btn helium" onClick={() => handleVoiceProcess(file.filename, 'helium')}>Helium</button>
+                  {/* Only show voice processing buttons for original files */}
+                  {!file.filename.startsWith('processed_') && (
+                    <div className="voice-processing">
+                      <h4>Voice Processing:</h4>
+                      <div className="voice-buttons">
+                        <button className="voice-btn male" onClick={() => handleVoiceProcess(file.filename, 'male')}>Male</button>
+                        <button className="voice-btn female" onClick={() => handleVoiceProcess(file.filename, 'female')}>Female</button>
+                        <button className="voice-btn robot" onClick={() => handleVoiceProcess(file.filename, 'robot')}>Robot</button>
+                        <button className="voice-btn baby" onClick={() => handleVoiceProcess(file.filename, 'baby')}>Baby</button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </li>
               ))}
             </ul>
