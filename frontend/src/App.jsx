@@ -28,7 +28,7 @@ function App() {
       let effectType = null;
 
       // Check if filename contains effect suffixes
-      const effectSuffixes = ['_robotic', '_male', '_female', '_baby'];
+      const effectSuffixes = ['_robotic', '_male', '_female', '_baby', '_cartoon', '_echo', '_distorted', '_anonymized'];
       for (const suffix of effectSuffixes) {
         if (filename.includes(suffix)) {
           originalName = filename.replace(suffix, '');
@@ -59,7 +59,6 @@ function App() {
 
   // Audio playback functions
   const playAudio = (filename) => {
-    console.log('Playing audio:', filename);
     // Stop any currently playing audio
     if (currentlyPlaying && audioRefsRef.current[currentlyPlaying]) {
       audioRefsRef.current[currentlyPlaying].pause();
@@ -67,11 +66,9 @@ function App() {
     }
 
     const audioRef = audioRefsRef.current[filename];
-    console.log('Audio ref found:', !!audioRef);
     if (audioRef) {
       audioRef.play()
         .then(() => {
-          console.log('Audio playing successfully');
           setCurrentlyPlaying(filename);
         })
         .catch((error) => {
@@ -85,7 +82,6 @@ function App() {
   };
 
   const pauseAudio = (filename) => {
-    console.log('Pausing audio:', filename);
     const audioRef = audioRefsRef.current[filename];
     if (audioRef) {
       audioRef.pause();
@@ -96,7 +92,6 @@ function App() {
   };
 
   const onAudioEnded = () => {
-    console.log('Audio ended');
     setCurrentlyPlaying(null);
   };
 
@@ -216,7 +211,7 @@ function App() {
         setVoiceEffects(data.available_effects);
       }
     } catch (err) {
-      console.log('Could not fetch voice effects:', err);
+      // Voice effects are optional, don't show error to user
     }
   }, []);
 
@@ -404,7 +399,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>🎵 Audio File Processing Studio</h1>
-        <p>Upload MP3 or WAV files and apply voice effects using advanced AI processing.</p>
+        <p>Upload MP3 or WAV files and apply voice effects using advanced DSP</p>
         <div className={`status-indicator ${apiStatus.toLowerCase()}`}>
           API Status: {apiStatus}
         </div>
@@ -454,10 +449,10 @@ function App() {
                                     console.error('Audio error for', group.original.filename, e);
                                   });
                                   ref.addEventListener('loadstart', () => {
-                                    console.log('Loading started for', group.original.filename);
+                                    // Audio loading started
                                   });
                                   ref.addEventListener('canplay', () => {
-                                    console.log('Can play', group.original.filename);
+                                    // Audio ready to play
                                   });
                                   ref.addEventListener('timeupdate', () => {
                                     updateAudioProgress(group.original.filename, ref.currentTime, ref.duration);
@@ -574,10 +569,10 @@ function App() {
                                           console.error('Audio error for', processedFile.filename, e);
                                         });
                                         ref.addEventListener('loadstart', () => {
-                                          console.log('Loading started for', processedFile.filename);
+                                          // Audio loading started
                                         });
                                         ref.addEventListener('canplay', () => {
-                                          console.log('Can play', processedFile.filename);
+                                          // Audio ready to play
                                         });
                                         ref.addEventListener('timeupdate', () => {
                                           updateAudioProgress(processedFile.filename, ref.currentTime, ref.duration);
