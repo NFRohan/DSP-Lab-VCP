@@ -140,3 +140,4 @@ cython_debug/
 # Test files
 sample_test.*
 test_audio.*
+test_voice_sample.wav
