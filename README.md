@@ -1,18 +1,32 @@
-# FastAPI Audio Upload Backend
+# FastAPI Audio Upload & Voice Processing Backend
 
-A modern FastAPI backend with React frontend for uploading, managing, and downloading audio files (MP3 or WAV).
+A modern FastAPI backend with React frontend for uploading, managing, downloading, and processing audio files with voice effects (MP3 or WAV).
 
 ## Features
 
 - ✅ Upload single audio files (MP3/WAV)
-- ✅ Download uploaded files
+- ✅ Download uploaded files  
 - ✅ File validation (type and size)
 - ✅ Safe filename handling
 - ✅ List uploaded files
-- ✅ Delete uploaded files
-- ✅ Modern React frontend
-- ✅ Dark mode UI
-- ✅ Automatic API documentation
+- ✅ Delete uploaded files with Windows lock handling
+- ✅ **Voice Processing Effects**:
+  - 🤖 **Robotic Voice** - Ring modulation with metallic distortion
+  - 👨 **Male Voice** - Pitch shifting for masculine sound
+  - 👩 **Female Voice** - Pitch shifting for feminine sound  
+  - 👶 **Baby Voice** - High-pitched with time stretching
+- ✅ **Modern React Frontend**:
+  - 🎵 **Built-in Audio Player** - Play audio directly in browser
+  - 📊 **Progress Bar & Controls** - Seek, volume, play/pause
+  - 📁 **File Grouping** - Original files grouped with their voice effects
+  - 🌙 **Dark Mode UI** - Professional dark theme
+  - 📱 **Responsive Design** - Works on desktop and mobile
+- ✅ **Advanced Features**:
+  - 🔄 **Hot Reload** - Automatic updates during development
+  - 🛡️ **Error Handling** - Graceful error management
+  - 🔐 **Safe File Operations** - Prevents path traversal attacks
+  - ⚡ **Fast Processing** - Optimized audio processing pipeline
+- ✅ Automatic API documentation (Swagger/OpenAPI)
 - ✅ File size limits (50MB max per file)
 - ✅ Duplicate filename handling
 
@@ -26,6 +40,15 @@ Before running this project, ensure you have the following installed:
 
 ## Installation & Setup
 
+### Quick Setup (Windows)
+For a one-click setup on Windows, simply run:
+```bash
+install.bat
+```
+This will automatically create a virtual environment, install all dependencies, and set up the frontend.
+
+### Manual Setup
+
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/NFRohan/DSP-Lab-VCP.git
@@ -38,7 +61,7 @@ Or download and extract the ZIP file from GitHub.
 
 #### Install Python Dependencies
 ```bash
-# Create a virtual environment (Optional)
+# Create a virtual environment (Recommended)
 python -m venv venv
 
 # Activate the virtual environment
@@ -54,8 +77,14 @@ pip install -r requirements.txt
 #### Alternative: Direct Installation
 If you prefer not to use a virtual environment:
 ```bash
-pip install fastapi==0.104.1 uvicorn[standard]==0.24.0 python-multipart==0.0.6 aiofiles==23.2.1 requests==2.31.0
+pip install fastapi==0.104.1 uvicorn[standard]==0.24.0 python-multipart==0.0.6 aiofiles==23.2.1 requests==2.31.0 librosa==0.10.1 "numpy>=1.24.3,<2.0" soundfile==0.12.1 "scipy>=1.11.1"
 ```
+
+#### **Important Notes:**
+- **Python Version**: Use Python 3.12 or compatible version (avoid 3.13+ due to librosa compatibility)
+- **Audio Libraries**: The voice processing features require audio processing libraries (librosa, numpy, soundfile, scipy)
+- **Installation Time**: Initial installation may take 5-10 minutes due to audio processing dependencies
+- **Windows Users**: Ensure Visual Studio Build Tools are installed if you encounter compilation errors
 
 ### 3. Frontend Setup (React)
 
@@ -64,6 +93,18 @@ Navigate to the frontend directory and install dependencies:
 cd frontend
 npm install
 ```
+
+#### **Frontend Dependencies Include:**
+- **React 19+** - Modern React framework
+- **Vite** - Fast build tool and development server
+- **Concurrently** - Runs backend and frontend simultaneously
+- **ESLint** - Code linting and formatting
+
+#### **Development Features:**
+- Hot Module Replacement (HMR) for instant updates
+- Integrated backend/frontend development workflow
+- Modern ES6+ JavaScript support
+- Responsive design with CSS Grid/Flexbox
 
 ### 4. Verify Installation
 
@@ -102,7 +143,7 @@ This will automatically:
 
 ### 1. Root Endpoint
 - **GET** `/`
-- Returns API information and supported formats
+- Returns API information, supported formats, and available voice effects
 
 ### 2. Upload Audio File
 - **POST** `/upload-audio/`
@@ -110,17 +151,34 @@ This will automatically:
 - Supported formats: MP3, WAV
 - Max file size: 50MB
 
-### 3. Download File
+### 3. Process Audio File (NEW!)
+- **POST** `/process-audio/{filename}?effect={effect_type}`
+- Applies voice effects to uploaded audio files
+- Available effects: `robotic`, `male`, `female`, `baby`
+- Returns processed file information
+
+### 4. Get Voice Effects (NEW!)
+- **GET** `/voice-effects/`
+- Returns list of available voice effects with descriptions
+
+### 5. Serve Audio File (NEW!)
+- **GET** `/files/{filename}`
+- Serves audio files for in-browser playback
+- Supports streaming for audio player controls
+- Returns audio file with appropriate media type headers
+
+### 6. Download File
 - **GET** `/download-file/{filename}`
 - Downloads a specific uploaded audio file
 
-### 4. List Uploaded Files
+### 7. List Uploaded Files
 - **GET** `/uploaded-files/`
 - Returns list of all uploaded audio files
 
-### 5. Delete File
+### 8. Delete File
 - **DELETE** `/delete-file/{filename}`
 - Deletes a specific uploaded file
+- Includes retry mechanism for Windows file lock handling
 
 ## Usage Examples
 
@@ -150,6 +208,23 @@ Delete a file:
 curl -X DELETE "http://localhost:8000/delete-file/your_audio.mp3"
 ```
 
+**Voice Processing Examples:**
+
+Get available voice effects:
+```bash
+curl -X GET "http://localhost:8000/voice-effects/"
+```
+
+Process audio with robotic voice effect:
+```bash
+curl -X POST "http://localhost:8000/process-audio/your_audio.mp3?effect=robotic"
+```
+
+Process audio with female voice effect:
+```bash
+curl -X POST "http://localhost:8000/process-audio/your_audio.mp3?effect=female"
+```
+
 ### Using Python requests
 
 ```python
@@ -163,6 +238,14 @@ with open('audio.mp3', 'rb') as f:
 
 # List files
 response = requests.get('http://localhost:8000/uploaded-files/')
+print(response.json())
+
+# Process audio with voice effects
+response = requests.post('http://localhost:8000/process-audio/audio.mp3?effect=robotic')
+print(response.json())
+
+# Get available voice effects
+response = requests.get('http://localhost:8000/voice-effects/')
 print(response.json())
 ```
 
@@ -285,6 +368,24 @@ The servers will automatically:
 
 #### Frontend won't start
 - Delete `node_modules` and `package-lock.json`, then run `npm install` again
+
+#### Audio playback issues
+- Ensure the backend server is running on port 8000
+- Check browser console (F12) for JavaScript errors
+- Try refreshing the file list to reload audio elements
+- Some audio formats may not be supported by your browser
+
+#### File deletion problems ("file in use" errors)
+- Audio files are automatically stopped before deletion
+- If deletion fails, wait a few seconds and try again
+- Close any other applications that might be using the audio file
+- On Windows, the system may briefly lock files after playback
+
+#### Voice processing takes too long
+- Large audio files (>10MB) may take 30+ seconds to process
+- Check the console output for progress messages
+- Ensure sufficient RAM is available (processing uses memory)
+- Try with smaller audio files first to test the system
 - Check Node.js version: `node --version` (should be 16+)
 
 ### Getting Help
