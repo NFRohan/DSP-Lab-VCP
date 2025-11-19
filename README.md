@@ -37,8 +37,19 @@ Before running this project, ensure you have the following installed:
 - **Python 3.8+** - [Download from python.org](https://www.python.org/downloads/)
 - **Node.js 16+** and **npm** - [Download from nodejs.org](https://nodejs.org/)
 - **Git** (optional) - For cloning the repository
+- **Docker** - [Download from docker.com](https://www.docker.com/products/docker-desktop)
 
-## Installation & Setup
+## Docker Setup (Recommended)
+
+To build and run the application using Docker, run the following command in the root directory:
+
+```bash
+docker-compose up --build
+```
+
+This will build the Docker images for the frontend and backend and start the services.
+
+## Manual Installation & Setup
 
 ### Quick Setup (Windows)
 For a one-click setup on Windows, simply run:
